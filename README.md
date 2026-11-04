@@ -2,6 +2,14 @@
 
 PracTrack AI is a practical-report platform for PTI Effurun. Technologists create experiments and rubric fields; approved students complete assigned reports and receive AI-assisted marks only after Technologist review.
 
+## Project documentation and presentation
+
+- [Full project documentation](./docs/PracTrack_AI_Project_Documentation.docx) — project goals,
+  architecture, technology stack, database, security, workflows, setup, testing, deployment,
+  limitations and presentation preparation.
+- [Presentation slides](./docs/PracTrack_AI_Project_Presentation.pptx) — 16-slide presentation
+  with speaker notes.
+
 ## Run locally
 
 Requirements: Node.js and npm.
