@@ -15,6 +15,8 @@ create table public.profiles (
 create table public.practicals (
   id uuid primary key default gen_random_uuid(),
   created_by uuid not null references public.profiles (user_id),
+  manual_path text,
+  manual_name text,
   title text not null check (char_length(title) between 1 and 200),
   course_code text not null default '' check (char_length(course_code) <= 40),
   description text not null default '' check (char_length(description) <= 5000),
@@ -80,7 +82,7 @@ create table public.report_answers (
   id uuid primary key default gen_random_uuid(),
   page_id uuid not null references public.report_pages (id) on delete cascade,
   field_id uuid not null references public.practical_fields (id) on delete restrict,
-  answer text not null default '' check (char_length(answer) <= 20000),
+  answer text not null default '',
   updated_at timestamptz not null default now(),
   unique (page_id, field_id)
 );
@@ -475,7 +477,6 @@ as $$
 declare
   report_student uuid;
   report_status text;
-  missing_required integer;
 begin
   select r.student_id, r.status
   into report_student, report_status
@@ -485,24 +486,6 @@ begin
 
   if report_student is distinct from auth.uid() or report_status <> 'draft' then
     raise exception 'Report is unavailable for submission';
-  end if;
-
-  select count(*) into missing_required
-  from public.reports r
-  join public.assignments a on a.id = r.assignment_id
-  join public.practical_fields f on f.practical_id = a.practical_id and f.required
-  where r.id = p_report_id
-    and not exists (
-      select 1
-      from public.report_pages pg
-      join public.report_answers answer on answer.page_id = pg.id
-      where pg.report_id = p_report_id
-        and answer.field_id = f.id
-        and btrim(answer.answer) <> ''
-    );
-
-  if missing_required > 0 then
-    raise exception 'Complete every required report field before submitting';
   end if;
 
   update public.reports

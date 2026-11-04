@@ -44,6 +44,8 @@ export type Database = {
         {
           id: string;
           created_by: string;
+          manual_path: string | null;
+          manual_name: string | null;
           title: string;
           course_code: string;
           description: string;
@@ -53,6 +55,8 @@ export type Database = {
         },
         {
           created_by: string;
+          manual_path?: string | null;
+          manual_name?: string | null;
           title: string;
           course_code?: string;
           description?: string;
@@ -62,6 +66,8 @@ export type Database = {
           created_at?: string;
         },
         {
+          manual_path?: string | null;
+          manual_name?: string | null;
           title?: string;
           course_code?: string;
           description?: string;
@@ -247,6 +253,14 @@ export type Database = {
             max_points: number;
             required: boolean;
           }>;
+        };
+        Returns: undefined;
+      };
+      attach_practical_manual: {
+        Args: {
+          p_practical_id: string;
+          p_manual_path: string | null;
+          p_manual_name: string | null;
         };
         Returns: undefined;
       };

@@ -32,7 +32,6 @@ export function ReportAnswerField({
         rows={5}
         value={value}
         disabled={disabled}
-        maxLength={20_000}
         aria-required={required}
         onChange={(event) => onChange(event.target.value)}
         onPaste={(event) => event.preventDefault()}
@@ -44,9 +43,6 @@ export function ReportAnswerField({
             event.preventDefault();
         }}
       />
-      <div className="mt-1 text-right text-xs text-muted-foreground">
-        {value.length}/20,000 characters
-      </div>
     </div>
   );
 }

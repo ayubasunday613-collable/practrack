@@ -26,6 +26,25 @@ describe("ReportAnswerField", () => {
     fireEvent.change(field, { target: { value: "Determine the sample property." } });
     expect(onChange).toHaveBeenCalledWith("Determine the sample property.");
   });
+
+  it("allows answers longer than the previous 20,000-character limit", () => {
+    const answer = "a".repeat(25_000);
+    render(
+      <ReportAnswerField
+        id="theory"
+        title="Theory"
+        instructions=""
+        value={answer}
+        required
+        disabled={false}
+        onChange={vi.fn()}
+      />,
+    );
+    const field = screen.getByRole("textbox", { name: "Theory" });
+
+    expect(field).toHaveValue(answer);
+    expect(field).not.toHaveAttribute("maxLength");
+  });
 });
 
 describe("report codes", () => {

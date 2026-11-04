@@ -309,30 +309,49 @@ export function ReportBooklet({
   const submitReport = async () => {
     if (!report) return;
     const client = requireSupabaseClient();
-    const { error } = await client.rpc("submit_report", { p_report_id: report.id });
-    if (error) {
-      console.error("Could not submit report.", error);
-      toast.error("Report could not be submitted", { description: error.message });
-      return;
-    }
-    const { error: assessmentError } = await client.functions.invoke("assess-report", {
-      body: { reportId: report.id },
-    });
-    if (assessmentError) {
-      console.error(
-        "Report was submitted, but automatic AI assessment did not start.",
-        assessmentError,
+    setSaving(true);
+    try {
+      const rows = pages.flatMap((reportPage) =>
+        fields.map((field) => ({
+          page_id: reportPage.id,
+          field_id: field.id,
+          answer: answers[`${reportPage.id}:${field.id}`] ?? "",
+        })),
       );
-      toast.warning("Report submitted; AI assessment could not start", {
-        description: "Your Technologist can retry the assessment from the review queue.",
+      const { error: answerError } = await client
+        .from("report_answers")
+        .upsert(rows, { onConflict: "page_id,field_id" });
+      if (answerError) throw answerError;
+
+      const { error } = await client.rpc("submit_report", { p_report_id: report.id });
+      if (error) throw error;
+
+      const { error: assessmentError } = await client.functions.invoke("assess-report", {
+        body: { reportId: report.id },
       });
-    } else {
-      toast.success("Report submitted", {
-        description:
-          "AI suggestions are being prepared for Technologist review. Final marks require approval.",
+      if (assessmentError) {
+        console.error(
+          "Report was submitted, but automatic AI assessment did not start.",
+          assessmentError,
+        );
+        toast.warning("Report submitted; AI assessment could not start", {
+          description: "Your Technologist can retry the assessment from the review queue.",
+        });
+      } else {
+        toast.success("Report submitted", {
+          description:
+            "AI suggestions are being prepared for Technologist review. Final marks require approval.",
+        });
+      }
+      await loadReport();
+    } catch (error) {
+      console.error("Could not submit report.", error);
+      toast.error("Report could not be submitted", {
+        description: error instanceof Error ? error.message : "Try again.",
       });
+    } finally {
+      setSaving(false);
     }
-    await loadReport();
   };
 
   if (assignmentId && !reportId) {
@@ -538,14 +557,15 @@ export function ReportBooklet({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Submit report for review?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Required fields must be completed. Once submitted, your answers are locked
-                      while a Technologist reviews the report.
+                      You can submit even if some fields are blank. The AI will assess the content
+                      you provide against the Technologist’s criteria. Once submitted, your answers
+                      are locked while a Technologist reviews the report.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Keep editing</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => void submitReport()}>
-                      Submit report
+                    <AlertDialogAction disabled={saving} onClick={() => void submitReport()}>
+                      {saving ? "Submitting…" : "Submit report"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

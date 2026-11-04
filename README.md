@@ -63,11 +63,44 @@ supabase functions deploy assess-report
 
 Optionally set `AI_API_URL` to the provider's chat-completions endpoint. Keep provider keys in Supabase secrets; do not add them to `.env.local` or client code. Submitted report text and Technologist-authored rubrics are sent to the configured provider; sketches are not.
 
+## Assignment email and practical manuals
+
+Apply `supabase/migrations/202611050001_report_submission_email_and_manuals.sql` to the
+production project after the existing migrations. It removes the database answer-length and
+required-answer submission checks, adds the private practical-manual bucket, and enables manual
+metadata and attachment.
+
+Configure Resend with a verified sender, then deploy the authenticated Supabase functions and set
+their server-side secrets:
+
+```sh
+supabase secrets set RESEND_API_KEY=your-resend-key RESEND_FROM_EMAIL="PracTrack <reports@your-verified-domain>"
+supabase secrets set APP_BASE_URL=https://ayubasunday613-collable.github.io/practrack/
+supabase functions deploy send-assignment-notification
+supabase functions deploy extract-practical-manual
+```
+
+The sender domain must be verified with Resend. The assignment function checks the signed-in
+Technologist, student, assignment, and active code before emailing it. If email delivery fails,
+the app reports the error; assign the student again to issue and email a fresh code.
+
+Technologists can upload PDF, DOCX, and TXT manuals (up to 20 MB). Text is extracted in the
+browser; scanned/image-only PDFs are not supported. The extracted text is sent to the configured
+AI provider to draft the practical fields and rubric. The original file is stored in the private
+`practical-manuals` bucket. AI suggestions must be reviewed and corrected before publishing.
+Configure `AI_API_KEY`, `AI_MODEL`, and optionally `AI_API_URL` as described above; these same
+secrets are used for manual extraction and report assessment.
+
+Report answers no longer have an application or database character cap, and students may submit
+incomplete reports. AI assessments judge each field against the Technologist's criteria, including
+blank answers. Extremely large reports can still exceed the configured AI provider's request or
+context limits; this does not prevent students from saving or submitting them.
+
 ## Workflow and safeguards
 
 - Students register and wait for Technologist approval.
 - Technologists author experiments, report fields, required-field rules, maximum marks, and marking criteria before publishing and assigning.
-- Each assigned student receives a random, one-time report code. Only its assigned, approved student account can claim it. The code is shown once, stored as a hash, and expires.
+- Each assigned student receives an emailed random, one-time report code. Only its assigned, approved student account can claim it. The code is stored as a hash and expires after seven days.
 - Students can add pages to a report booklet and upload up to five private JPG/JPEG/PNG sketches per report. Text answers block paste as a browser-side deterrent, not proof of authorship.
 - AI suggestions are saved as unapproved marks. A Technologist must review/adjust and approve every field before students can see final grades.
 

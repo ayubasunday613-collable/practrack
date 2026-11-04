@@ -14,3 +14,9 @@ enabled = false
 
 [functions.assess-report]
 verify_jwt = true
+
+[functions.send-assignment-notification]
+verify_jwt = true
+
+[functions.extract-practical-manual]
+verify_jwt = true
