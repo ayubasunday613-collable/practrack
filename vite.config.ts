@@ -6,10 +6,19 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+const githubPages = process.env.GITHUB_PAGES === "true";
+
 export default defineConfig({
+  vite: {
+    base: githubPages ? "/practrack/" : "/",
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    router: { basepath: githubPages ? "/practrack" : undefined },
+    defaultSsr: !githubPages,
+    spa: githubPages ? { enabled: true, prerender: { outputPath: "/404" } } : undefined,
+    prerender: githubPages ? { enabled: true, crawlLinks: false, failOnError: true } : undefined,
   },
 });
